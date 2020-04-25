@@ -62,6 +62,7 @@ class UserHandler {
             $user = new User();
             $user->id = $data['id'];
             $user->name = $data['name'];
+            $user->email = $data['email'];
             $user->birthdate = $data['birthdate'];
             $user->city = $data['city'];
             $user->work = $data['work'];
@@ -123,6 +124,43 @@ class UserHandler {
         return $token;
     }
 
+    public function editUser($id, $avatar, $cover, $name, $city, $work, $email, $password, $birthdate) {
+        if(!empty($password)) {
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $token = md5(time().rand(0,9999).time());
+
+            User::update()
+                ->set([
+                    'avatar' => $avatar,
+                    'cover' => $cover,
+                    'name' => $name,
+                    'city' => $city,
+                    'work' => $work,
+                    'email' => $email,
+                    'password' => $hash,
+                    'birthdate' => $birthdate,
+                    'token' => $token
+                ])
+                ->where('id', $id)
+            ->execute();
+        } else {
+            User::update()
+                ->set([
+                    'avatar' => $avatar,
+                    'cover' => $cover,
+                    'name' => $name,
+                    'city' => $city,
+                    'work' => $work,
+                    'email' => $email,
+                    'birthdate' => $birthdate,
+                ])
+                ->where('id', $id)
+            ->execute();
+        }
+
+        return (!empty($password)) ? $token : $_SESSION['token'];
+    }
+
     public static function isFollowing($from, $to) {
         $data = UserRelation::select()
             ->where('user_from', $from)
@@ -145,5 +183,24 @@ class UserHandler {
             ->where('user_to', $to)
         ->execute();
     }
-    
+
+    public static function searchUser($term) {
+        $users = [];
+
+        $data = User::select()->where('name', 'like', '%'.$term.'%')->get();
+
+        if($data) {
+            foreach($data as $user) {
+
+                $newUser = new User();
+                $newUser->id = $user['id'];
+                $newUser->name = $user['name'];
+                $newUser->avatar = $user['avatar'];
+
+                $users[] = $newUser;
+            }
+        }
+
+        return $users;
+    }    
 }
